@@ -34,6 +34,10 @@ TARGET_RK3588 ?= 0
 # Makeflag to enable OSX fixes
 OSX_BUILD ?= 0
 
+# Build for iOS
+TARGET_IOS ?= 1
+MIN_IOS_VERSION ?= 13.4
+
 # Specify the target you are building for, TARGET_BITS=0 means native
 TARGET_ARCH ?= native
 TARGET_BITS ?= 0
@@ -128,6 +132,10 @@ ifeq ($(HOST_OS),Darwin)
   ifndef BREW_PREFIX
     BREW_PREFIX := $(shell brew --prefix)
   endif
+endif
+
+ifeq ($(TARGET_IOS)$(OSX_BUILD),10)
+  $(error You need to be under macOS to build for iOS)
 endif
 
 ifeq ($(HOST_OS),Linux)
@@ -329,6 +337,10 @@ ifeq ($(TARGET_RK3588),1)
   OPT_FLAGS := -march=armv8.2-a+crc+simd -mtune=cortex-a76 -O3
 endif
 
+ifeq ($(TARGET_IOS),1)
+  DISCORD_SDK := 0
+endif
+
 # Set BITS (32/64) to compile for
 OPT_FLAGS += $(BITS)
 
@@ -370,6 +382,10 @@ endif
 
 ifeq ($(OSX_BUILD),1) # Modify GFX & SDL2 for OSX GL
      DEFINES += OSX_BUILD=1
+endif
+
+ifeq ($(TARGET_IOS),1)
+     DEFINES += TARGET_IOS=1 USE_GLES=1
 endif
 
 # Check backends
@@ -538,6 +554,7 @@ include dynos.mk
 # Source code files
 LEVEL_C_FILES     := $(wildcard levels/*/leveldata.c) $(wildcard levels/*/script.c) $(wildcard levels/*/geo.c)
 C_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c)) $(LEVEL_C_FILES)
+M_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.m))
 CPP_FILES         := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.cpp))
 S_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.s))
 ULTRA_C_FILES     := $(foreach dir,$(ULTRA_SRC_DIRS),$(wildcard $(dir)/*.c))
@@ -583,6 +600,7 @@ SOUND_SEQUENCE_FILES := \
 
 # Object files
 O_FILES := $(foreach file,$(C_FILES),$(BUILD_DIR)/$(file:.c=.o)) \
+           $(foreach file,$(M_FILES),$(BUILD_DIR)/$(file:.m=.o)) \
            $(foreach file,$(CPP_FILES),$(BUILD_DIR)/$(file:.cpp=.o)) \
            $(foreach file,$(S_FILES),$(BUILD_DIR)/$(file:.s=.o)) \
            $(foreach file,$(GENERATED_C_FILES),$(file:.c=.o))
@@ -660,7 +678,12 @@ ifeq ($(OSX_BUILD),1)
   AS := i686-w64-mingw32-as
 endif
 
-ifeq ($(WINDOWS_AUTO_BUILDER),1)
+ifeq ($(TARGET_IOS),1)
+  CC      := clang
+  CXX     := clang++
+  PROF_FLAGS += -arch arm64 -isysroot `xcode-select -print-path`/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk
+  EXTRA_CFLAGS += -Wno-unused-result -mios-version-min=$(MIN_IOS_VERSION)
+else ifeq ($(WINDOWS_AUTO_BUILDER),1)
   CC      := cc
   CXX     := g++
 else ifeq ($(COMPILER),gcc)
@@ -769,6 +792,11 @@ BACKEND_LDFLAG0S :=
 SDL1_USED := 0
 SDL2_USED := 0
 
+ifeq ($(TARGET_IOS),1)
+  BACKEND_CFLAGS += -Ilib/curl/include
+  BACKEND_LDFLAGS += -Llib/curl/ios
+endif
+
 # for now, it's either SDL+GL or DXGI+DirectX, so choose based on WAPI
 ifeq ($(WINDOW_API),DXGI)
   DXBITS := `cat $(ENDIAN_BITWIDTH) | tr ' ' '\n' | tail -1`
@@ -781,6 +809,10 @@ else ifeq ($(findstring SDL,$(WINDOW_API)),SDL)
     BACKEND_LDFLAGS += -lGLESv2
   else ifeq ($(TARGET_RK3588),1)
     BACKEND_LDFLAGS += -lGLESv2
+  else ifeq ($(TARGET_IOS),1)
+    BACKEND_LDFLAGS += -mios-version-min=$(MIN_IOS_VERSION) -framework OpenGLES -framework AVFoundation -framework AudioToolbox -framework CoreFoundation -framework CoreGraphics -framework CoreBluetooth -framework CoreAudio -framework IOKit -framework GameController -framework Foundation -framework UIKit -framework QuartzCore -framework CoreMotion -framework CoreHaptics -framework Metal -framework Security
+   #BACKEND_LDFLAGS += -mios-version-min=$(MIN_IOS_VERSION) -framework OpenGLES -framework CoreFoundation -framework GameController -framework Foundation -framework UIKit -framework Metal -framework Security
+    EXTRA_CPP_FLAGS += -mios-version-min=$(MIN_IOS_VERSION) -stdlib=libc++ -std=c++17
   else ifeq ($(OSX_BUILD),1)
     BACKEND_LDFLAGS += -framework OpenGL `pkg-config --libs glew` -mmacosx-version-min=$(MIN_MACOS_VERSION)
     EXTRA_CPP_FLAGS += -stdlib=libc++ -std=c++17 -mmacosx-version-min=$(MIN_MACOS_VERSION)
@@ -818,7 +850,10 @@ else ifeq ($(SDL1_USED),1)
 endif
 
 ifneq ($(SDL1_USED)$(SDL2_USED),00)
-  ifeq ($(OSX_BUILD),1)
+  ifeq ($(TARGET_IOS),1)
+    BACKEND_CFLAGS += -Ilib/sdl2/include
+    BACKEND_LDFLAGS += -Llib/sdl2/ios -lSDL2
+  else ifeq ($(OSX_BUILD),1)
     # on OSX at least the homebrew version of sdl-config gives include path as `.../include/SDL2` instead of `.../include`
     OSX_PREFIX := $(shell $(SDLCONFIG) --prefix)
     BACKEND_CFLAGS += -I$(OSX_PREFIX)/include $(shell $(SDLCONFIG) --cflags)
@@ -828,7 +863,7 @@ ifneq ($(SDL1_USED)$(SDL2_USED),00)
 
   ifeq ($(WINDOWS_BUILD),1)
     BACKEND_LDFLAGS += `$(SDLCONFIG) --static-libs` -lsetupapi -luser32 -limm32 -lole32 -loleaut32 -lshell32 -lshlwapi -lwinmm -lversion
-  else
+  else ifneq ($(TARGET_IOS),1)
     BACKEND_LDFLAGS += `$(SDLCONFIG) --libs`
   endif
 endif
@@ -947,6 +982,8 @@ ifeq ($(WINDOWS_BUILD),1)
   else
     LDFLAGS += -Llib/lua/win64 -l:liblua53.a
   endif
+else ifeq ($(TARGET_IOS),1)
+  LDFLAGS += -L./lib/lua/ios/ -l lua53
 else ifeq ($(OSX_BUILD),1)
   ifeq ($(shell uname -m),arm64)
     LDFLAGS += -L./lib/lua/mac_arm/ -l lua53
@@ -974,6 +1011,10 @@ ifeq ($(COOPNET),1)
     else
       LDFLAGS += -Llib/coopnet/win64 -l:libcoopnet.a -l:libjuice.a -lbcrypt -liphlpapi
     endif
+  else ifeq ($(TARGET_IOS),1)
+    LDFLAGS += -Wl,-rpath,@loader_path -L./lib/coopnet/ios/ -l coopnet
+    COOPNET_LIBS += ./lib/coopnet/ios/libcoopnet.dylib
+    COOPNET_LIBS += ./lib/coopnet/ios/libjuice.1.6.2.dylib
   else ifeq ($(OSX_BUILD),1)
     ifeq ($(shell uname -m),arm64)
       LDFLAGS += -Wl,-rpath,@loader_path -L./lib/coopnet/mac_arm/ -l coopnet
@@ -1459,6 +1500,12 @@ $(BUILD_DIR)/%.o: $(BUILD_DIR)/%.c
 	$(V)$(CC_CHECK) $(PROF_FLAGS) $(CC_CHECK_CFLAGS) -MMD -MP -MT $@ -MF $(BUILD_DIR)/$*.d $<
 	$(V)$(CC) $(PROF_FLAGS) -c $(CFLAGS) -o $@ $<
 
+# Compile M code
+$(BUILD_DIR)/%.o: %.m
+	$(call print,Compiling:,$<,$@)
+	$(V)$(CC_CHECK) $(PROF_FLAGS) $(CC_CHECK_CFLAGS) -MMD -MP -MT $@ -MF $(BUILD_DIR)/$*.d $<
+	$(V)$(CC) $(PROF_FLAGS) -c $(CFLAGS) -o $@ $<
+
 # Alternate compiler flags needed for matching
 ifeq ($(COMPILER),ido)
   $(BUILD_DIR)/levels/%/leveldata.o: OPT_FLAGS := -g
@@ -1589,6 +1636,41 @@ endif
 all:
 	@if [ "$(USE_APP)" = "0" ]; then \
 		rm -rf build/us_pc/sm64coopdx.app; \
+  elif [ "$(TARGET_IOS)" = "1" ]; then \
+    $(PRINT) "$(GREEN)Creating IPA Bundle: $(BLUE)build/sm64coopdx.ipa\n"; \
+    rm -rf build/sm64coopdx.ipa build/Payload; \
+    mkdir -p build/Payload/sm64coopdx.app; \
+    cp build/us_pc/sm64coopdx build/Payload/sm64coopdx.app; \
+    cp -r build/us_pc/mods build/Payload/sm64coopdx.app; \
+    cp -r build/us_pc/lang build/Payload/sm64coopdx.app; \
+    cp -r build/us_pc/dynos build/Payload/sm64coopdx.app; \
+    cp -r build/us_pc/palettes build/Payload/sm64coopdx.app; \
+    cp build/us_pc/libcoopnet.dylib build/Payload/sm64coopdx.app; \
+    cp build/us_pc/libjuice.1.6.2.dylib build/Payload/sm64coopdx.app; \
+		echo "APPL????" > build/Payload/sm64coopdx.app/PkgInfo; \
+		echo '<?xml version="1.0" encoding="UTF-8"?>' > build/Payload/sm64coopdx.app/Info.plist; \
+		echo '<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '<plist version="1.0">' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '<dict>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <key>CFBundleExecutable</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <string>sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <key>CFBundleDisplayName</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <string>sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <key>CFBundleName</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <string>sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <key>CFBundleIdentifier</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <string>coop-deluxe.sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <key>CFBundleShortVersionString</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <string>1.4.0</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <key>LSSupportsOpeningDocumentsInPlace</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <true/>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <key>UIFileSharingEnabled</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <true/>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '    <!-- Add other keys and values here -->' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '</dict>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		echo '</plist>' >> build/Payload/sm64coopdx.app/Info.plist; \
+		cd build && zip -rq sm64coopdx.ipa Payload -x "*.DS_Store" && cd .. ; \
+		$(PRINT) "$(GREEN)Done\n"; \
   else \
 		$(PRINT) "$(GREEN)Creating App Bundle: $(BLUE)build/us_pc/sm64coopdx.app\n"; \
 		rm -rf $(APP_DIR); \

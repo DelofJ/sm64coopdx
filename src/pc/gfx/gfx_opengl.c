@@ -16,7 +16,11 @@
 
 #if FOR_WINDOWS || defined(OSX_BUILD)
 # define GLEW_STATIC
-# include <GL/glew.h>
+# ifdef USE_GLES
+#  include <OpenGLES/ES2/gl.h>
+# else
+#  include <GL/glew.h>
+# endif
 #endif
 
 #define GL_GLEXT_PROTOTYPES 1
@@ -687,7 +691,7 @@ static inline bool gl_get_version(int *major, int *minor, bool *is_es) {
 }
 
 static void gfx_opengl_init(void) {
-#if FOR_WINDOWS || defined(OSX_BUILD)
+#if FOR_WINDOWS || (defined(OSX_BUILD) && !defined(TARGET_IOS))
     GLenum err;
     if ((err = glewInit()) != GLEW_OK)
         sys_fatal("could not init GLEW:\n%s", glewGetErrorString(err));
@@ -709,10 +713,12 @@ static void gfx_opengl_init(void) {
 
     glBindBuffer(GL_ARRAY_BUFFER, opengl_vbo);
 
+#ifndef USE_GLES
     if (vmajor >= 3 && !is_es) {
         glGenVertexArrays(1, &opengl_vao);
         glBindVertexArray(opengl_vao);
     }
+#endif
 
     glDepthFunc(GL_LEQUAL);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

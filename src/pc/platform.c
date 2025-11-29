@@ -301,6 +301,15 @@ const char *sys_user_path(void) {
     static char path[SYS_MAX_PATH] = { 0 };
     if ('\0' != path[0]) { return path; }
 
+#ifdef TARGET_IOS
+    const char *home = getenv("HOME");
+    if (home == NULL) return NULL;
+
+    strncpy(path, home, SYS_MAX_PATH - 1);
+    strncat(path, "/Documents", SYS_MAX_PATH - 1);
+    return path;
+#else
+
     char const *subdirs[] = { "sm64coopdx", "sm64ex-coop", "sm64coopdx", NULL };
 
     char *sdlPath = NULL;
@@ -328,11 +337,12 @@ const char *sys_user_path(void) {
     if (path[len-1] == '/' || path[len-1] == '\\') { path[len-1] = 0; }
 
     return path;
+#endif
 }
 
 const char *sys_resource_path(void)
 {
-#ifdef __APPLE__ // Kinda lazy, but I don't know how to add CoreFoundation.framework
+#if defined(__APPLE__) && !defined(TARGET_IOS) // Kinda lazy, but I don't know how to add CoreFoundation.framework
     static char path[SYS_MAX_PATH];
     if ('\0' != path[0]) { return path; }
 
