@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>sm64coopdx</string>
+    <key>CFBundleDisplayName</key>
+    <string>sm64coopdx</string>
+    <key>CFBundleName</key>
+    <string>sm64coopdx</string>
+    <key>CFBundleIdentifier</key>
+    <string>coop-deluxe.sm64coopdx</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.4.0</string>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <!-- Add other keys and values here -->
+</dict>
+</plist>

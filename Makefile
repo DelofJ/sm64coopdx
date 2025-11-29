@@ -1637,39 +1637,22 @@ all:
 	@if [ "$(USE_APP)" = "0" ]; then \
 		rm -rf build/us_pc/sm64coopdx.app; \
   elif [ "$(TARGET_IOS)" = "1" ]; then \
-    $(PRINT) "$(GREEN)Creating IPA Bundle: $(BLUE)build/sm64coopdx.ipa\n"; \
-    rm -rf build/sm64coopdx.ipa build/Payload; \
-    mkdir -p build/Payload/sm64coopdx.app; \
-    cp build/us_pc/sm64coopdx build/Payload/sm64coopdx.app; \
-    cp -r build/us_pc/mods build/Payload/sm64coopdx.app; \
-    cp -r build/us_pc/lang build/Payload/sm64coopdx.app; \
-    cp -r build/us_pc/dynos build/Payload/sm64coopdx.app; \
-    cp -r build/us_pc/palettes build/Payload/sm64coopdx.app; \
-    cp build/us_pc/libcoopnet.dylib build/Payload/sm64coopdx.app; \
-    cp build/us_pc/libjuice.1.6.2.dylib build/Payload/sm64coopdx.app; \
-		echo "APPL????" > build/Payload/sm64coopdx.app/PkgInfo; \
-		echo '<?xml version="1.0" encoding="UTF-8"?>' > build/Payload/sm64coopdx.app/Info.plist; \
-		echo '<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '<plist version="1.0">' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '<dict>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <key>CFBundleExecutable</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <string>sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <key>CFBundleDisplayName</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <string>sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <key>CFBundleName</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <string>sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <key>CFBundleIdentifier</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <string>coop-deluxe.sm64coopdx</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <key>CFBundleShortVersionString</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <string>1.4.0</string>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <key>LSSupportsOpeningDocumentsInPlace</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <true/>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <key>UIFileSharingEnabled</key>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <true/>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '    <!-- Add other keys and values here -->' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '</dict>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		echo '</plist>' >> build/Payload/sm64coopdx.app/Info.plist; \
-		cd build && zip -rq sm64coopdx.ipa Payload -x "*.DS_Store" && cd .. ; \
+    $(PRINT) "$(GREEN)Creating IPA Bundle: $(BLUE)build/us_pc/sm64coopdx.ipa\n"; \
+    rm -rf Payload; \
+    rm -rf build/us_pc/sm64coopdx.ipa build/us_pc/sm64coopdx.app; \
+    mkdir -p Payload/sm64coopdx.app; \
+    cp build/us_pc/sm64coopdx Payload/sm64coopdx.app; \
+    cp -r build/us_pc/mods Payload/sm64coopdx.app; \
+    cp -r build/us_pc/lang Payload/sm64coopdx.app; \
+    cp -r build/us_pc/dynos Payload/sm64coopdx.app; \
+    cp -r build/us_pc/palettes Payload/sm64coopdx.app; \
+    cp build/us_pc/*.dylib Payload/sm64coopdx.app; \
+		cp res/PkgInfo Payload/sm64coopdx.app/PkgInfo; \
+		cp res/ios.plist Payload/sm64coopdx.app/Info.plist; \
+		zip -rq sm64coopdx.ipa Payload -x "*.DS_Store"; \
+		mv sm64coopdx.ipa build/us_pc; \
+		mv Payload/sm64coopdx.app build/us_pc; \
+		rm -r Payload; \
 		$(PRINT) "$(GREEN)Done\n"; \
   else \
 		$(PRINT) "$(GREEN)Creating App Bundle: $(BLUE)build/us_pc/sm64coopdx.app\n"; \
@@ -1682,10 +1665,7 @@ all:
     cp -r build/us_pc/lang $(APP_RESOURCES_DIR); \
     cp -r build/us_pc/dynos $(APP_RESOURCES_DIR); \
     cp -r build/us_pc/palettes $(APP_RESOURCES_DIR); \
-		cp build/us_pc/discord_game_sdk.dylib $(APP_MACOS_DIR); \
-    cp build/us_pc/libdiscord_game_sdk.dylib $(APP_MACOS_DIR); \
-    cp build/us_pc/libcoopnet.dylib $(APP_MACOS_DIR); \
-    cp build/us_pc/libjuice.1.2.2.dylib $(APP_MACOS_DIR); \
+		cp build/us_pc/*.dylib $(APP_MACOS_DIR); \
     cp $(SDL2_LIB) $(APP_MACOS_DIR)/libSDL2.dylib; \
     install_name_tool -change $(BREW_PREFIX)/opt/sdl2/lib/libSDL2-2.0.0.dylib @executable_path/libSDL2.dylib $(APP_MACOS_DIR)/sm64coopdx; > /dev/null 2>&1 \
 		install_name_tool -id @executable_path/libSDL2.dylib $(APP_MACOS_DIR)/libSDL2.dylib; > /dev/null 2>&1 \
@@ -1695,22 +1675,8 @@ all:
 		install_name_tool -id @executable_path/libGLEW.dylib $(APP_MACOS_DIR)/libGLEW.dylib; > /dev/null 2>&1 \
     codesign --force --deep --sign - $(APP_MACOS_DIR)/libGLEW.dylib; \
 		cp res/icon.icns $(APP_RESOURCES_DIR)/icon.icns; \
-		echo "APPL????" > $(APP_CONTENTS_DIR)/PkgInfo; \
-		echo '<?xml version="1.0" encoding="UTF-8"?>' > $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '<plist version="1.0">' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '<dict>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <key>CFBundleExecutable</key>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <string>sm64coopdx</string>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <key>CFBundleIconFile</key>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <string>icon</string>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <key>CFBundleIconName</key>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <string>AppIcon</string>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <key>CFBundleDisplayName</key>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <string>sm64coopdx</string>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '    <!-- Add other keys and values here -->' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '</dict>' >> $(APP_CONTENTS_DIR)/Info.plist; \
-		echo '</plist>' >> $(APP_CONTENTS_DIR)/Info.plist; \
+		cp res/PkgInfo $(APP_CONTENTS_DIR)/PkgInfo; \
+		cp res/macos.plist $(APP_CONTENTS_DIR)/Info.plist; \
 		chmod +x $(APP_MACOS_DIR)/sm64coopdx; \
 		mv $(APP_DIR) build/us_pc/; \
   fi
