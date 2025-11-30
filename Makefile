@@ -1649,6 +1649,7 @@ all:
     cp build/us_pc/*.dylib Payload/sm64coopdx.app; \
 		cp res/PkgInfo Payload/sm64coopdx.app/PkgInfo; \
 		cp res/ios.plist Payload/sm64coopdx.app/Info.plist; \
+		sips -s format png res/icon.ico -o Payload/sm64coopdx.app/AppIcon.png -c 304 304 > /dev/null 2>&1; \
 		zip -rq sm64coopdx.ipa Payload -x "*.DS_Store"; \
 		mv sm64coopdx.ipa build/us_pc; \
 		mv Payload/sm64coopdx.app build/us_pc; \
