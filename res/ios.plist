@@ -9,7 +9,7 @@
     <key>CFBundleName</key>
     <string>sm64coopdx</string>
     <key>CFBundleIdentifier</key>
-    <string>coop-deluxe.sm64coopdx</string>
+    <string>com.coop-deluxe.sm64coopdx</string>
     <key>CFBundleShortVersionString</key>
     <string>1.4.0</string>
     <key>LSSupportsOpeningDocumentsInPlace</key>
