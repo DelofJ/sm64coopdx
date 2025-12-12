@@ -142,7 +142,7 @@ static void gfx_sdl_init(const char *window_title) {
     wnd = SDL_CreateWindow(
         window_title,
         xpos, ypos, configWindow.w, configWindow.h,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
     );
     ctx = SDL_GL_CreateContext(wnd);
 
@@ -162,7 +162,7 @@ static void gfx_sdl_main_loop(void (*run_one_game_iter)(void)) {
 
 static void gfx_sdl_get_dimensions(uint32_t *width, uint32_t *height) {
     int w, h;
-    SDL_GetWindowSize(wnd, &w, &h);
+    SDL_GetWindowSizeInPixels(wnd, &w, &h);
     if (width) *width = w;
     if (height) *height = h;
 }

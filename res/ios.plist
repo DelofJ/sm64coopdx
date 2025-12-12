@@ -35,6 +35,8 @@
         <string>UIInterfaceOrientationLandscapeLeft</string>
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
     <!-- Add other keys and values here -->
 </dict>
 </plist>
