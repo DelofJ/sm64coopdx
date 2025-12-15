@@ -117,6 +117,7 @@ static void gfx_sdl_init(const char *window_title) {
 #endif
 
     SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+    SDL_SetHint(SDL_HINT_ACCELEROMETER_AS_JOYSTICK, "0");
     SDL_Init(SDL_INIT_VIDEO);
     SDL_StartTextInput();
 
